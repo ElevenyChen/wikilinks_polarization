@@ -1,0 +1,185 @@
+---
+title: "Final-project"
+author: "Eleveny Chen"
+date: '2024-03-13'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r read in}
+wiki2018 <- read.csv("filtered_enwiki_links_2018.csv", stringsAsFactors = FALSE)
+wiki2017 <- read.csv("filtered_enwiki_links_2017.csv", stringsAsFactors = FALSE)
+wiki2014 <- read.csv("filtered_enwiki_links_2014.csv", stringsAsFactors = FALSE)
+```
+
+```{r load packages}
+if (!requireNamespace("igraph", quietly = TRUE)) install.packages("igraph")
+if (!requireNamespace("ergm", quietly = TRUE)) install.packages("ergm")
+if (!requireNamespace("ergm", quietly = TRUE)) install.packages("tergm")
+if (!requireNamespace("network", quietly = TRUE)) install.packages("network")
+if (!requireNamespace("readr", quietly = TRUE)) install.packages("readr")
+library(igraph)
+library(ergm)
+library(tergm)
+library(network)
+library(readr)
+```
+
+
+```{r graphs}
+# Ensure that vertices are created for each unique source and target, with edges between them
+graph_wiki2018 <- graph_from_data_frame(d = wiki2018, directed = TRUE)
+graph_wiki2017 <- graph_from_data_frame(d = wiki2017, directed = TRUE)
+graph_wiki2014 <- graph_from_data_frame(d = wiki2014, directed = TRUE)
+
+# Extract and assign labels for each vertex
+V(graph_wiki2018)$name <- ifelse(is.na(match(V(graph_wiki2018)$name, wiki2018$source)),
+                                 wiki2018$target_label[match(V(graph_wiki2018)$name, wiki2018$target)],
+                                 wiki2018$source_label[match(V(graph_wiki2018)$name, wiki2018$source)])
+V(graph_wiki2017)$name <- ifelse(is.na(match(V(graph_wiki2017)$name, wiki2017$source)),
+                                 wiki2017$target_label[match(V(graph_wiki2017)$name, wiki2017$target)],
+                                 wiki2017$source_label[match(V(graph_wiki2017)$name, wiki2017$source)])
+V(graph_wiki2014)$name <- ifelse(is.na(match(V(graph_wiki2014)$name, wiki2014$source)),
+                                 wiki2014$target_label[match(V(graph_wiki2014)$name, wiki2014$target)],
+                                 wiki2014$source_label[match(V(graph_wiki2014)$name, wiki2014$source)])
+
+# Now plot the graph using these labels
+plot(graph_wiki2018, vertex.size=25, vertex.label.cex = 1.0, edge.arrow.size = 0.3, 
+     main = "Wikipedia2018 Network Graph", vertex.label = V(graph_wiki2018)$name)
+plot(graph_wiki2017, vertex.size=25, vertex.label.cex = 1.0, edge.arrow.size = 0.3, 
+     main = "Wikipedia2017 Network Graph", vertex.label = V(graph_wiki2017)$name)
+plot(graph_wiki2014, vertex.size=25, vertex.label.cex = 1.0, edge.arrow.size = 0.3, 
+     main = "Wikipedia2014 Network Graph", vertex.label = V(graph_wiki2014)$name)
+```
+
+
+```{r modularity 2018}
+# Apply the algorithms to the directed graph
+community_detection_infomap <- cluster_infomap(graph_wiki2018)
+community_detection_edge_betweenness <- cluster_edge_betweenness(graph_wiki2018)
+
+# Calculate the modularity scores
+modularity_score_infomap <- modularity(community_detection_infomap)
+modularity_edge_betweenness <- modularity(community_detection_edge_betweenness)
+print(paste("Modularity Score (Infomap) 2018:", modularity_score_infomap))
+print(paste("Modularity Score (Edge Betweenness) 2018:", modularity_edge_betweenness))
+
+# Check the numbers of communities detected
+num_communities_infomap <- length(sizes(community_detection_infomap))
+num_communities_eb <- length(sizes(community_detection_edge_betweenness))
+print(paste("Number of communities detected with Infomap 2018:", num_communities_infomap))
+print(paste("Number of communities detected with Edge Betweenness 2018:", num_communities_eb))
+
+# community membership list
+membership_vector <- membership(community_detection_infomap)
+print(membership_vector)
+```
+
+```{r modularity 2017}
+# Apply the algorithms to the directed graph
+community_detection_infomap <- cluster_infomap(graph_wiki2017)
+community_detection_edge_betweenness <- cluster_edge_betweenness(graph_wiki2017)
+
+# Calculate the modularity scores
+modularity_score_infomap <- modularity(community_detection_infomap)
+modularity_edge_betweenness <- modularity(community_detection_edge_betweenness)
+print(paste("Modularity Score (Infomap) 2017:", modularity_score_infomap))
+print(paste("Modularity Score (Edge Betweenness) 2017:", modularity_edge_betweenness))
+
+# Check the numbers of communities detected
+num_communities_infomap <- length(sizes(community_detection_infomap))
+num_communities_eb <- length(sizes(community_detection_edge_betweenness))
+print(paste("Number of communities detected with Infomap 2017:", num_communities_infomap))
+print(paste("Number of communities detected with Edge Betweenness 2017:", num_communities_eb))
+
+membership_vector <- membership(community_detection_infomap)
+print(membership_vector)
+```
+
+```{r modularity 2014}
+# Apply the algorithms to the directed graph
+community_detection_infomap <- cluster_infomap(graph_wiki2014)
+community_detection_edge_betweenness <- cluster_edge_betweenness(graph_wiki2014)
+
+# Calculate the modularity scores
+modularity_score_infomap <- modularity(community_detection_infomap)
+modularity_edge_betweenness <- modularity(community_detection_edge_betweenness)
+print(paste("Modularity Score (Infomap) 2014:", modularity_score_infomap))
+print(paste("Modularity Score (Edge Betweenness) 2014:", modularity_edge_betweenness))
+
+# Check the numbers of communities detected
+num_communities_infomap <- length(sizes(community_detection_infomap))
+num_communities_eb <- length(sizes(community_detection_edge_betweenness))
+print(paste("Number of communities detected with Infomap 2014:", num_communities_infomap))
+print(paste("Number of communities detected with Edge Betweenness 2014:", num_communities_eb))
+
+membership_vector <- membership(community_detection_infomap)
+print(membership_vector)
+```
+
+```{r centrality 2018}
+# Calculate Observed Centrality Measures
+in_degree_centrality <- degree(graph_wiki2018, mode = "in")
+out_degree_centrality <- degree(graph_wiki2018, mode = "out")
+
+# Print the in-degree centrality
+print("In-degree Centrality in 2018:")
+print(in_degree_centrality)
+
+# Print the out-degree centrality
+print("Out-degree Centrality in 2018:")
+print(out_degree_centrality)
+```
+
+```{r centrality 2017}
+# Calculate Observed Centrality Measures
+in_degree_centrality <- degree(graph_wiki2017, mode = "in")
+out_degree_centrality <- degree(graph_wiki2017, mode = "out")
+
+# Print the in-degree centrality
+print("In-degree Centrality in 2017:")
+print(in_degree_centrality)
+
+# Print the out-degree centrality
+print("Out-degree Centrality in 2017:")
+print(out_degree_centrality)
+```
+
+```{r centrality 2014}
+# Calculate Observed Centrality Measures
+in_degree_centrality <- degree(graph_wiki2014, mode = "in")
+out_degree_centrality <- degree(graph_wiki2014, mode = "out")
+
+# Print the in-degree centrality
+print("In-degree Centrality in 2014:")
+print(in_degree_centrality)
+
+# Print the out-degree centrality
+print("Out-degree Centrality in 2014:")
+print(out_degree_centrality)
+```
+
+```{r ERGM 2018}
+edge_list2018 <- read.csv("filtered_enwiki_links_2018.csv", stringsAsFactors = FALSE)
+net_wiki2018 <- network(edge_list2018[, c("source", "target")], directed = TRUE)
+set.vertex.attribute(net_wiki2018, "label", edge_list2018$source_label[match(network.vertex.names(net_wiki2018), edge_list2018$source)])
+ergm_2018 <- ergm(net_wiki2018 ~ edges + mutual + transitiveties + gwesp(0.2, fixed = TRUE))
+summary(ergm_2018)
+```
+
+```{r ERGM 2017}
+edge_list2017 <- read.csv("filtered_enwiki_links_2017.csv", stringsAsFactors = FALSE)
+net_wiki2017 <- network(edge_list2017[, c("source", "target")], directed = TRUE)
+set.vertex.attribute(net_wiki2017, "label", edge_list2017$source_label[match(network.vertex.names(net_wiki2017), edge_list2017$source)])
+ergm_2017 <- ergm(net_wiki2017 ~ edges + mutual + transitiveties)
+summary(ergm_2017)
+```
+
+```{r ERGM 2014}
+edge_list2014 <- read.csv("filtered_enwiki_links_2014.csv", stringsAsFactors = FALSE)
+net_wiki2014 <- network(edge_list2014[, c("source", "target")], directed = TRUE)
+set.vertex.attribute(net_wiki2014, "label", edge_list2014$source_label[match(network.vertex.names(net_wiki2014), edge_list2014$source)])
+ergm_2014 <- ergm(net_wiki2014 ~ edges + mutual + transitiveties + gwesp(0.2, fixed = TRUE))
+summary(ergm_2014)
+```
